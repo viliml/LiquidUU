@@ -4,6 +4,7 @@ import buildcraft.api.recipes.RefineryRecipe;
 import buildcraft.BuildCraftEnergy;
 import buildcraft.BuildCraftFactory;
 import buildcraft.BuildCraftTransport;
+import buildcraft.api.fuels.*;
 
 import cpw.mods.fml.common.network.NetworkRegistry;
 import cpw.mods.fml.common.registry.GameRegistry;
@@ -31,22 +32,23 @@ public class CommonProxy {
 
     public static int baseConversionUU        =  3;
     public static int convenienceConversionUU =  5;
-    public static int nonfuelConversionUU     =  1;
+    public static int coolantConversionUU     =  2;
+    public static int miscConversionUU        =  1;
 
     public static int baseConversionMJ = 5;
 
-    public static int oilConversion        =  1;
-    public static int fuelConversion       =  1;
-    public static int biofuelConversion    =  3;
-    public static int biomassConversion    = 12;
-    public static int appleJuiceConversion =  8;
-    public static int honeyConversion      =  8;
-    public static int seedOilConversion    = 20;
-    public static int creosoteConversion   = 30;
-    public static int lavaConversion       = 30;
-    public static int iceConversion        =  1;
-    public static int coolantConversion    =  2;
-
+    public static int baseConversion        =  1;
+    public static int convenienceConversion =  1;
+    public static int coolantConversion     =  2;
+    public static int miscConversion        =  5;
+    
+    public static float baseEffectiveness =
+        IronEngineFuel.getFuelForLiquid(new LiquidStack(BuildCraftEnergy.oilStill)).powerPerCycle;
+    public static float convenienceEffectiveness =
+        IronEngineFuel.getFuelForLiquid(new LiquidStack(BuildCraftEnergy.fuel)).powerPerCycle;
+    public static float coolantEffectiveness =
+        IronEngineFuel.getFuelForLiquid(new LiquidStack(BuildCraftEnergy.oilStill)).coolingPerUnit;
+    
     // Canonical item stacks, liquid stacks, and blocks
     public static ItemStack liquidUUItemStack;
     public static ItemStack electricWaterItemStack;
@@ -95,27 +97,23 @@ public class CommonProxy {
                 "always be 1 millibucket of the liquid, output will always be 1 + conversionRatio.");
         config.addCustomCategoryComment("conversion.base", "This category is for liquids that can be further processed (e.g. oil can be processed to fuel).");
         config.addCustomCategoryComment("conversion.convenience", "This category is for liquids that are burned directly (e.g. fuel, biofuel).");
-        config.addCustomCategoryComment("conversion.nonfuel", "This category is for liquids that are not burned at all.");
+        config.addCustomCategoryComment("conversion.coolant", "This category is for liquids that are used as coolants.");
+        config.addCustomCategoryComment("conversion.misc", "This category is for liquids that are not burned at all.");
         Property baseConversionMJ     = config.get("conversion", "mj.per.uu", this.baseConversionMJ);
         baseConversionMJ.comment = "The Refinery will consume this many MJ per unit of UU being converted in each step.";
         Property baseConversionUU = config.get("conversion", "uu.base", this.baseConversionUU);
         baseConversionUU.comment = "All conversions in the \"base\" category will consume this much UU";
         Property convenienceConversionUU = config.get("conversion", "uu.convenience", this.convenienceConversionUU);
         convenienceConversionUU.comment = "All conversions in the \"convenience\" category will consume this much UU";
-        Property nonfuelConversionUU = config.get("conversion", "uu.nonfuel", this.nonfuelConversionUU);
-        nonfuelConversionUU.comment = "All conversions in the \"nonfuel\" category will consume this much UU";
+        Property coolantConversionUU = config.get("conversion", "uu.coolant", this.coolantConversionUU);
+        nonfuelConversionUU.comment = "All conversions in the \"coolant\" category will consume this much UU";
+        Property miscConversionUU = config.get("conversion", "uu.misc", this.miscConversionUU);
+        miscConversionUU.comment = "All conversions in the \"misc\" category will consume this much UU";
 
-        Property oilConversion        = config.get("conversion.base", "oil", this.oilConversion);
-        Property fuelConversion       = config.get("conversion.convenience", "fuel", this.fuelConversion);
-        Property biofuelConversion    = config.get("conversion.convenience", "biofuel", this.biofuelConversion);
-        Property biomassConversion    = config.get("conversion.base", "biomass", this.biomassConversion);
-        Property appleJuiceConversion = config.get("conversion.base", "apple.juice", this.appleJuiceConversion);
-        Property honeyConversion      = config.get("conversion.base", "liquid.honey", this.honeyConversion);
-        Property seedOilConversion    = config.get("conversion.convenience", "seed.oil", this.seedOilConversion);
-        Property creosoteConversion   = config.get("conversion.convenience", "creosote.oil", this.creosoteConversion);
-        Property lavaConversion       = config.get("conversion.convenience", "lava", this.lavaConversion);
-        Property iceConversion        = config.get("conversion.nonfuel", "crushed.ice", this.iceConversion);
-        Property coolantConversion    = config.get("conversion.nonfuel", "ic2.coolant", this.coolantConversion);
+        Property baseConversion        = config.get("conversion.base", "base", this.baseConversion);
+        Property convenienceConversion = config.get("conversion.convenience", "convenience", this.convenienceConversion);
+        Property coolantConversion     = config.get("conversion.coolant", "coolant", this.coolantConversion);
+        Property miscConversion        = config.get("conversion.misc", "misc", this.miscConversion)
 
         Property debugOverride = config.get("general", "debug.override", LiquidUU.DEBUG);
         debugOverride.comment  = "This flag allows you to force LiquidUU debugging on, which may help figure out why stuff broke.";
@@ -131,19 +129,12 @@ public class CommonProxy {
 
         this.baseConversionUU        = baseConversionUU.getInt(this.baseConversionUU);
         this.convenienceConversionUU = convenienceConversionUU.getInt(this.convenienceConversionUU);
-        this.nonfuelConversionUU     = nonfuelConversionUU.getInt(this.nonfuelConversionUU);
+        this.coolantConversionUU     = coolantConversionUU.getInt(this.nonfuelConversionUU);
+        this.miscConversionUU     = miscConversionUU.getInt(this.miscConversionUU);
 
-        this.oilConversion        = oilConversion.getInt(this.oilConversion);
-        this.fuelConversion       = fuelConversion.getInt(this.fuelConversion);
-        this.biofuelConversion    = biofuelConversion.getInt(this.biofuelConversion);
-        this.biomassConversion    = biomassConversion.getInt(this.biomassConversion);
-        this.appleJuiceConversion = appleJuiceConversion.getInt(this.appleJuiceConversion);
-        this.honeyConversion      = honeyConversion.getInt(this.honeyConversion);
-        this.seedOilConversion    = seedOilConversion.getInt(this.seedOilConversion);
-        this.creosoteConversion   = creosoteConversion.getInt(this.creosoteConversion);
-        this.lavaConversion       = lavaConversion.getInt(this.lavaConversion);
-        this.iceConversion        = iceConversion.getInt(this.iceConversion);
-        this.coolantConversion    = coolantConversion.getInt(this.coolantConversion);
+        this.baseConversion        = baseConversion.getInt(this.baseConversion);
+        this.convenienceConversion = convenienceConversion.getInt(this.convenienceConversion);
+        this.coolantConversion     = coolantConversion.getInt(this.coolantConversion);
     }
 
     public void initLiquids() {
@@ -236,9 +227,27 @@ public class CommonProxy {
     public void initRefineryRecipes() {
         addConversionRecipe(convenienceConversionUU, Block.lavaStill.blockID, 0, lavaConversion);
 
-        addConversionRecipe(baseConversionUU, BuildCraftEnergy.oilStill.blockID, 0, oilConversion);
-        addConversionRecipe(convenienceConversionUU, BuildCraftEnergy.fuel.shiftedIndex, 0, fuelConversion);
+        addConversionRecipe(baseConversionUU, BuildCraftEnergy.oilStill.blockID, 0, baseConversion);
+        addConversionRecipe(convenienceConversionUU, BuildCraftEnergy.fuel.shiftedIndex, 0, convenienceConversion);
 
         addConversionRecipe(nonfuelConversionUU, Ic2Items.coolant.itemID, Ic2Items.coolant.getItemDamage(), coolantConversion);
+        
+        for (LiquidStack liquid: LiquidDictionary.getLiquids())
+        {
+            if (!liquid.isLiquidEqual(new LiquidStack(Block.lavaStill, 1)) ||
+                !liquid.isLiquidEqual(new LiquidStack(Block.waterStill, 1)) ||
+                !liquid.isLiquidEqual(new LiquidStack(BuildCraftEnergy.oilStill, 1)) ||
+                !liquid.isLiquidEqual(new LiquidStack(BuildCraftEnergy.fuel, 1)))
+                    continue;
+            if ((IronEngineFuel fuel = IronEngineFuel.fuels.getFuelForLiquid(liquid)) != null)
+            {
+                if (RefineryRecipe.findRefineryRecipe(liquid, null) != null) 
+                    addConversionRecipe(baseConversionUU, liquid.itemID, liquid.itemMeta, baseConversion*(baseEffectiveness/fuel.powerPerCycle));
+                else addConversionRecipe(convenienceConversionUU, liquid.itemID, liquid.itemMeta, convenienceConversion*(convenienceEffectiveness/fuel.powerPerCycle));
+            }
+            else if ((IronEngineCoolant coolant = IronEngineCoolant.coolants.getCoolantForLiquid(liquid)) != null)
+                addConversionRecipe(coolantConversionUU, liquid.itemID, liquid.itemMeta, coolantConversion*(coolantEffectiveness/coolant.coolingPerUnit));
+            else addConversionRecipe(miscConversionUU, liquid.itemID, liquid.itemMeta, miscConversion);
+        }
     }
 }
