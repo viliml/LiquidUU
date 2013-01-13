@@ -18,11 +18,7 @@ public class Railcraft {
             ItemRegistry.printItemTags();
         }
 
-        ItemStack creosoteStack = ItemRegistry.getItem("liquid.creosote.liquid", 1);
-        if(creosoteStack != null) {
-            CommonProxy.addConversionRecipe(CommonProxy.convenienceConversionUU, creosoteStack.itemID, creosoteStack.getItemDamage(),
-                    CommonProxy.creosoteConversion);
-        }
+        
 
         return true;
     }
