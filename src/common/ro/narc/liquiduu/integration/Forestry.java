@@ -43,24 +43,6 @@ public class Forestry {
     }
 
     public static void initRefineryRecipes() {
-        ItemStack liquidBiomass = ItemInterface.getItem("liquidBiomass");
-        ItemStack liquidBiofuel = ItemInterface.getItem("liquidBiofuel");
-        ItemStack liquidSeedOil = ItemInterface.getItem("liquidSeedOil");
-        ItemStack liquidJuice   = ItemInterface.getItem("liquidJuice");
-        ItemStack liquidHoney   = ItemInterface.getItem("liquidHoney");
-        ItemStack crushedIce    = ItemInterface.getItem("liquidIce");
-
-        CommonProxy.addConversionRecipe(CommonProxy.baseConversionUU,        liquidBiomass.itemID, liquidBiomass.getItemDamage(),
-                CommonProxy.biomassConversion);
-        CommonProxy.addConversionRecipe(CommonProxy.convenienceConversionUU, liquidBiofuel.itemID, liquidBiofuel.getItemDamage(),
-                CommonProxy.biofuelConversion);
-        CommonProxy.addConversionRecipe(CommonProxy.baseConversionUU,        liquidJuice.itemID,   liquidJuice.getItemDamage(),
-                CommonProxy.appleJuiceConversion);
-        CommonProxy.addConversionRecipe(CommonProxy.baseConversionUU,        liquidHoney.itemID,   liquidHoney.getItemDamage(),
-                CommonProxy.honeyConversion);
-        CommonProxy.addConversionRecipe(CommonProxy.convenienceConversionUU, liquidSeedOil.itemID, liquidSeedOil.getItemDamage(),
-                CommonProxy.seedOilConversion);
-        CommonProxy.addConversionRecipe(CommonProxy.nonfuelConversionUU,     crushedIce.itemID,    crushedIce.getItemDamage(),
-                CommonProxy.iceConversion);
+        
     }
 }
